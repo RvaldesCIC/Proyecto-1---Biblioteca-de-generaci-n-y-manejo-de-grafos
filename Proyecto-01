@@ -1,0 +1,161 @@
+#Proyecto 01 Diseño y analisis de algorimos
+# CIC-IPN Rosendo Valdes Hernandez
+
+import random
+from graphviz import Digraph
+
+class Nodo:
+    def __init__(self, nombre):
+        self.nombre = nombre
+
+    def __repr__(self):
+        return str(self.nombre)
+
+class Arista:
+    def __init__(self, inicio, fin, peso=1):
+        self.inicio = inicio
+        self.fin = fin
+        self.peso = peso
+
+    def __repr__(self):
+        return f"({self.inicio} -> {self.fin}: {self.peso})"
+
+class Grafo:
+    def __init__(self):
+        self.nodos = []
+        self.aristas = []
+
+    def agregar_nodo(self, nodo):
+        self.nodos.append(nodo)
+
+    def agregar_arista(self, inicio, fin, peso=1):
+        self.aristas.append(Arista(inicio, fin, peso))
+
+    def grafo_a_graphviz(self, filename):
+        dot = Digraph(format='png')
+        dot.attr(size='10,10')  # Ajustar el tamaño del grafo
+
+        # Estilo de los nodos
+        dot.attr('node', shape='circle', style='filled', color='lightblue', fontsize='12', fontcolor='black')
+
+        # Añadir nodos
+        for nodo in self.nodos:
+            dot.node(str(nodo))
+
+        # Estilo de las aristas
+        dot.attr('edge', color='gray', fontsize='10')
+
+        # Añadir aristas
+        for arista in self.aristas:
+            dot.edge(str(arista.inicio), str(arista.fin))
+
+        # Guardar el grafo como imagen
+        dot.render(filename, cleanup=True)
+
+def grafoMalla(m, n, dirigido=False):
+    grafo = Grafo()
+    for i in range(m):
+        for j in range(n):
+            nodo = Nodo((i, j))
+            grafo.agregar_nodo(nodo)
+            if i < m - 1:
+                grafo.agregar_arista(nodo, Nodo((i + 1, j)))
+            if j < n - 1:
+                grafo.agregar_arista(nodo, Nodo((i, j + 1)))
+    return grafo
+
+def grafoErdosRenyi(n, m, dirigido=False):
+    grafo = Grafo()
+    for i in range(n):
+        grafo.agregar_nodo(Nodo(i))
+    aristas_disponibles = [(i, j) for i in range(n) for j in range(i + 1, n)]
+    random.shuffle(aristas_disponibles)
+    for _ in range(m):
+        inicio, fin = aristas_disponibles.pop()
+        grafo.agregar_arista(Nodo(inicio), Nodo(fin))
+    return grafo
+
+def grafoGilbert(n, p, dirigido=False):
+    grafo = Grafo()
+    for i in range(n):
+        grafo.agregar_nodo(Nodo(i))
+    for i in range(n):
+        for j in range(i + 1, n):
+            if random.random() < p:
+                grafo.agregar_arista(Nodo(i), Nodo(j))
+                if not dirigido:
+                    grafo.agregar_arista(Nodo(j), Nodo(i))
+    return grafo
+
+def grafoGeografico(n, r, dirigido=False):
+    grafo = Grafo()
+    posiciones = [(random.uniform(0, 1), random.uniform(0, 1)) for _ in range(n)]
+    for i in range(n):
+        grafo.agregar_nodo(Nodo(i))
+    for i in range(n):
+        for j in range(i + 1, n):
+            distancia = ((posiciones[i][0] - posiciones[j][0]) ** 2 + (posiciones[i][1] - posiciones[j][1]) ** 2) ** 0.5
+            if distancia <= r:
+                grafo.agregar_arista(Nodo(i), Nodo(j))
+                if not dirigido:
+                    grafo.agregar_arista(Nodo(j), Nodo(i))
+    return grafo
+
+def grafoBarabasiAlbert(n, d, dirigido=False):
+    grafo = Grafo()
+    nodos = [Nodo(i) for i in range(d)]
+    for nodo in nodos:
+        grafo.agregar_nodo(nodo)
+    for i in range(d, n):
+        nuevo_nodo = Nodo(i)
+        grafo.agregar_nodo(nuevo_nodo)
+        probabilidades = [len([a for a in grafo.aristas if a.inicio == nodo]) + 1 for nodo in nodos]
+        total_probabilidades = sum(probabilidades)
+        nodos_elegidos = random.choices(nodos, weights=[p / total_probabilidades for p in probabilidades], k=d)
+        for nodo_elegido in nodos_elegidos:
+            grafo.agregar_arista(nuevo_nodo, nodo_elegido)
+            if not dirigido:
+                grafo.agregar_arista(nodo_elegido, nuevo_nodo)
+        nodos.append(nuevo_nodo)
+    return grafo
+
+def grafoDorogovtsevMendes(n, dirigido=False):
+    grafo = Grafo()
+    for i in range(3):
+        grafo.agregar_nodo(Nodo(i))
+    grafo.agregar_arista(Nodo(0), Nodo(1))
+    grafo.agregar_arista(Nodo(0), Nodo(2))
+    grafo.agregar_arista(Nodo(1), Nodo(2))
+    for i in range(3, n):
+        arista = random.choice(grafo.aristas)
+        nuevo_nodo = Nodo(i)
+        grafo.agregar_nodo(nuevo_nodo)
+        grafo.agregar_arista(nuevo_nodo, arista.inicio)
+        grafo.agregar_arista(nuevo_nodo, arista.fin)
+    return grafo
+
+# Implementación:
+if __name__ == "__main__":
+    # Crear y guardar un grafo de malla
+    grafo_malla = grafoMalla(3, 3)
+    grafo_malla.grafo_a_graphviz("grafo_malla")
+
+    # Crear y guardar un grafo con el modelo de Erdos-Renyi
+    grafo_er = grafoErdosRenyi(5, 5)
+    grafo_er.grafo_a_graphviz("grafo_erdos_renyi")
+
+    # Crear y guardar un grafo con el modelo de Gilbert
+    grafo_gilbert = grafoGilbert(5, 0.3)
+    grafo_gilbert.grafo_a_graphviz("grafo_gilbert")
+
+    # Crear y guardar un grafo con el modelo geográfico simple
+    grafo_geo = grafoGeografico(5, 0.5)
+    grafo_geo.grafo_a_graphviz("grafo_geografico")
+
+    # Crear y guardar un grafo con el modelo Barabasi-Albert
+    grafo_ba = grafoBarabasiAlbert(10, 2)
+    grafo_ba.grafo_a_graphviz("grafo_barabasi_albert")
+
+    # Crear y guardar un grafo con el modelo Dorogovtsev-Mendes
+    grafo_dm = grafoDorogovtsevMendes(20)
+    grafo_dm.grafo_a_graphviz("grafo_dorogovtsev_mendes")
