@@ -52,6 +52,15 @@ class Grafo:
         # Guardar el grafo como imagen
         dot.render(filename, cleanup=True)
 
+    def guardar_grafo_simple(self, filename):
+        with open(filename, 'w') as file:
+            file.write('digraph G {\n')
+            for nodo in self.nodos:
+                file.write(f'  {nodo};\n')
+            for arista in self.aristas:
+                file.write(f'  {arista.inicio} -> {arista.fin};\n')
+            file.write('}\n')
+
 def grafoMalla(m, n, dirigido=False):
     grafo = Grafo()
     for i in range(m):
@@ -134,28 +143,36 @@ def grafoDorogovtsevMendes(n, dirigido=False):
         grafo.agregar_arista(nuevo_nodo, arista.fin)
     return grafo
 
-# Implementación:
+# Ejemplo de uso:
 if __name__ == "__main__":
     # Crear y guardar un grafo de malla
     grafo_malla = grafoMalla(3, 3)
     grafo_malla.grafo_a_graphviz("grafo_malla")
+    grafo_malla.guardar_grafo_simple("grafo_malla.dot")
 
     # Crear y guardar un grafo con el modelo de Erdos-Renyi
     grafo_er = grafoErdosRenyi(5, 5)
     grafo_er.grafo_a_graphviz("grafo_erdos_renyi")
+    grafo_er.guardar_grafo_simple("grafo_erdos_renyi.dot")
 
     # Crear y guardar un grafo con el modelo de Gilbert
     grafo_gilbert = grafoGilbert(5, 0.3)
     grafo_gilbert.grafo_a_graphviz("grafo_gilbert")
+    grafo_gilbert.guardar_grafo_simple("grafo_gilbert.dot")
 
     # Crear y guardar un grafo con el modelo geográfico simple
     grafo_geo = grafoGeografico(5, 0.5)
     grafo_geo.grafo_a_graphviz("grafo_geografico")
+    grafo_geo.guardar_grafo_simple("grafo_geografico.dot")
 
     # Crear y guardar un grafo con el modelo Barabasi-Albert
     grafo_ba = grafoBarabasiAlbert(10, 2)
     grafo_ba.grafo_a_graphviz("grafo_barabasi_albert")
+    grafo_ba.guardar_grafo_simple("grafo_barabasi_albert.dot")
 
     # Crear y guardar un grafo con el modelo Dorogovtsev-Mendes
     grafo_dm = grafoDorogovtsevMendes(20)
     grafo_dm.grafo_a_graphviz("grafo_dorogovtsev_mendes")
+    grafo_dm.guardar_grafo_simple("grafo_dorogovtsev_mendes.dot")
+
+
