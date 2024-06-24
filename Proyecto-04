@@ -1,0 +1,99 @@
+#Proyecto 04 CIC-IPN
+#Rosendo Valdés Hernández
+class Grafo:
+    def __init__(self):
+        self.vertices = {}
+        self.aristas = []
+    
+    def agregar_vertice(self, v):
+        if v not in self.vertices:
+            self.vertices[v] = []
+    
+    def agregar_arista(self, u, v, peso):
+        self.vertices[u].append((v, peso))
+        self.vertices[v].append((u, peso))  # Asumiendo grafo no dirigido
+        self.aristas.append((peso, u, v))
+    
+    def obtener_vertices(self):
+        return list(self.vertices.keys())
+    
+    def obtener_aristas(self):
+        return self.aristas
+    
+    def encontrar(self, padre, i):
+        if padre[i] == i:
+            return i
+        return self.encontrar(padre, padre[i])
+    
+    def unir(self, padre, rango, x, y):
+        raiz_x = self.encontrar(padre, x)
+        raiz_y = self.encontrar(padre, y)
+        
+        if rango[raiz_x] < rango[raiz_y]:
+            padre[raiz_x] = raiz_y
+        elif rango[raiz_x] > rango[raiz_y]:
+            padre[raiz_y] = raiz_x
+        else:
+            padre[raiz_y] = raiz_x
+            rango[raiz_x] += 1
+    
+    def KruskalD(self):
+        padre = {}
+        rango = {}
+        mst = []
+        
+        # Inicializar los conjuntos disjuntos
+        for vertice in self.vertices:
+            padre[vertice] = vertice
+            rango[vertice] = 0
+        
+        # Ordenar aristas por peso
+        self.aristas.sort()
+        
+        for peso, u, v in self.aristas:
+            raiz_u = self.encontrar(padre, u)
+            raiz_v = self.encontrar(padre, v)
+            
+            if raiz_u != raiz_v:
+                mst.append((u, v, peso))
+                self.unir(padre, rango, raiz_u, raiz_v)
+        
+        return mst
+
+import networkx as nx
+import matplotlib.pyplot as plt
+
+# Suponiendo que tienes una instancia de Grafo llamada 'grafo'
+# Aquí se crea un grafo aleatorio y se calcula el MST usando Kruskal directo
+
+# Generar grafo aleatorio
+grafo_aleatorio = nx.Graph()
+grafo_aleatorio.add_nodes_from(grafo.obtener_vertices())
+
+for v in grafo.obtener_vertices():
+    for vecino, peso in grafo.obtener_vecinos(v):
+        if v < vecino:  # Para evitar duplicar aristas en grafo no dirigido
+            grafo_aleatorio.add_edge(v, vecino, weight=peso)
+
+# Calcular MST usando Kruskal directo
+mst_kruskal_directo = grafo.KruskalD()
+
+# Agregar etiquetas a los nodos en el MST
+labels = {v: f"{v}" for v in grafo.obtener_vertices()}
+
+# Visualizar el grafo original y el MST calculado
+plt.figure(figsize=(12, 8))
+
+# Dibujar grafo original
+pos = nx.spring_layout(grafo_aleatorio)
+nx.draw_networkx_nodes(grafo_aleatorio, pos, node_size=500, node_color='lightblue')
+nx.draw_networkx_edges(grafo_aleatorio, pos)
+nx.draw_networkx_labels(grafo_aleatorio, pos, labels=labels)
+
+# Dibujar aristas del MST (Kruskal directo)
+for u, v, peso in mst_kruskal_directo:
+    nx.draw_networkx_edges(grafo_aleatorio, pos, edgelist=[(u, v)], width=2.0, edge_color='red')
+
+plt.title('Grafo Original y MST (Kruskal Directo)')
+plt.axis('off')
+plt.show()
