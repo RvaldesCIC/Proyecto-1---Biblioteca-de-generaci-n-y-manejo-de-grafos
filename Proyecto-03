@@ -1,0 +1,42 @@
+#Proyecto 03 CIC-IPN
+#Rosendo Valdés Hernández
+from heapq import heappop, heappush
+import math
+
+class Grafo:
+    def __init__(self):
+        self.vertices = {}
+    
+    def agregar_vertice(self, v):
+        if v not in self.vertices:
+            self.vertices[v] = []
+    
+    def agregar_arista(self, u, v, peso):
+        self.vertices[u].append((v, peso))
+        self.vertices[v].append((u, peso))  # Asumiendo grafo no dirigido
+    
+    def obtener_vertices(self):
+        return list(self.vertices.keys())
+    
+    def obtener_vecinos(self, v):
+        return self.vertices[v]
+    
+    def Dijkstra(self, s):
+        distancias = {v: float('inf') for v in self.vertices}
+        distancias[s] = 0
+        heap = [(0, s)]  # (distancia, vertice)
+        
+        while heap:
+            distancia_actual, vertice_actual = heappop(heap)
+            
+            if distancia_actual > distancias[vertice_actual]:
+                continue
+            
+            for vecino, peso in self.obtener_vecinos(vertice_actual):
+                distancia_nueva = distancia_actual + peso
+                
+                if distancia_nueva < distancias[vecino]:
+                    distancias[vecino] = distancia_nueva
+                    heappush(heap, (distancia_nueva, vecino))
+        
+        return distancias
