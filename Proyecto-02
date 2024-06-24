@@ -1,0 +1,219 @@
+ Diseño y analisis de algorimos
+# CIC-IPN Rosendo Valdes Hernandez
+
+import random
+from graphviz import Digraph
+from collections import deque
+
+class Nodo:
+    def __init__(self, nombre):
+        self.nombre = nombre
+
+    def __repr__(self):
+        return str(self.nombre)
+
+class Arista:
+    def __init__(self, inicio, fin, peso=1):
+        self.inicio = inicio
+        self.fin = fin
+        self.peso = peso
+
+    def __repr__(self):
+        return f"({self.inicio} -> {self.fin}: {self.peso})"
+
+class Grafo:
+    def __init__(self):
+        self.nodos = []
+        self.aristas = []
+
+    def agregar_nodo(self, nodo):
+        self.nodos.append(nodo)
+
+    def agregar_arista(self, inicio, fin, peso=1):
+        self.aristas.append(Arista(inicio, fin, peso))
+
+    def grafo_a_graphviz(self, filename):
+        dot = Digraph(format='png')
+        dot.attr(size='10,10')  # Ajustar el tamaño del grafo
+
+        # Estilo de los nodos
+        dot.attr('node', shape='circle', style='filled', color='lightblue', fontsize='12', fontcolor='black')
+
+        # Añadir nodos
+        for nodo in self.nodos:
+            dot.node(str(nodo))
+
+        # Estilo de las aristas
+        dot.attr('edge', color='gray', fontsize='10')
+
+        # Añadir aristas
+        for arista in self.aristas:
+            dot.edge(str(arista.inicio), str(arista.fin))
+
+        # Guardar el grafo como imagen
+        dot.render(filename, cleanup=True)
+
+
+def BFS(self, s):
+    visitado = {nodo.nombre: False for nodo in self.nodos}  # Usar los nombres de los nodos como claves
+    arbol_BFS = Grafo()
+    cola = deque([s])
+    visitado[s.nombre] = True  # Utilizar el nombre del nodo como clave
+    while cola:
+        nodo_actual = cola.popleft()
+        for arista in self.aristas:
+            if arista.inicio.nombre == nodo_actual.nombre and not visitado[arista.fin.nombre]:  # Comparar los nombres de los nodos
+                visitado[arista.fin.nombre] = True  # Utilizar el nombre del nodo como clave
+                cola.append(arista.fin)
+                arbol_BFS.agregar_nodo(arista.fin)
+                arbol_BFS.agregar_arista(arista.inicio, arista.fin)
+    return arbol_BFS
+
+
+
+    def DFS_R(self, s):
+        visitado = {nodo: False for nodo in self.nodos}
+        arbol_DFS = Grafo()
+        self._DFS_R_util(s, visitado, arbol_DFS)
+        return arbol_DFS
+
+    def _DFS_R_util(self, nodo, visitado, arbol_DFS):
+        visitado[nodo] = True
+        for arista in self.aristas:
+            if arista.inicio == nodo and not visitado[arista.fin]:
+                arbol_DFS.agregar_nodo(arista.fin)
+                arbol_DFS.agregar_arista(arista.inicio, arista.fin)
+                self._DFS_R_util(arista.fin, visitado, arbol_DFS)
+
+    def DFS_I(self, s):
+        visitado = {nodo: False for nodo in self.nodos}
+        arbol_DFS = Grafo()
+        pila = [s]
+        while pila:
+            nodo_actual = pila.pop()
+            if not visitado[nodo_actual]:
+                visitado[nodo_actual] = True
+                arbol_DFS.agregar_nodo(nodo_actual)
+                for arista in self.aristas:
+                    if arista.inicio == nodo_actual and not visitado[arista.fin]:
+                        pila.append(arista.fin)
+                        arbol_DFS.agregar_arista(arista.inicio, arista.fin)
+        return arbol_DFS
+
+def grafoMalla(m, n, dirigido=False):
+    grafo = Grafo()
+    for i in range(m):
+        for j in range(n):
+            nodo = Nodo((i, j))
+            grafo.agregar_nodo(nodo)
+            if i < m - 1:
+                grafo.agregar_arista(nodo, Nodo((i + 1, j)))
+            if j < n - 1:
+                grafo.agregar_arista(nodo, Nodo((i, j + 1)))
+    return grafo
+
+def grafoErdosRenyi(n, m, dirigido=False):
+    grafo = Grafo()
+    for i in range(n):
+        grafo.agregar_nodo(Nodo(i))
+    aristas_disponibles = [(i, j) for i in range(n) for j in range(i + 1, n)]
+    random.shuffle(aristas_disponibles)
+    for _ in range(m):
+        inicio, fin = aristas_disponibles.pop()
+        grafo.agregar_arista(Nodo(inicio), Nodo(fin))
+    return grafo
+
+def grafoGilbert(n, p, dirigido=False):
+    grafo = Grafo()
+    for i in range(n):
+        grafo.agregar_nodo(Nodo(i))
+    for i in range(n):
+        for j in range(i + 1, n):
+            if random.random() < p:
+                grafo.agregar_arista(Nodo(i), Nodo(j))
+                if not dirigido:
+                    grafo.agregar_arista(Nodo(j), Nodo(i))
+    return grafo
+
+def grafoGeografico(n, r, dirigido=False):
+    grafo = Grafo()
+    posiciones = [(random.uniform(0, 1), random.uniform(0, 1)) for _ in range(n)]
+    for i in range(n):
+        grafo.agregar_nodo(Nodo(i))
+    for i in range(n):
+        for j in range(i + 1, n):
+            distancia = ((posiciones[i][0] - posiciones[j][0]) ** 2 + (posiciones[i][1] - posiciones[j][1]) ** 2) ** 0.5
+            if distancia <= r:
+                grafo.agregar_arista(Nodo(i), Nodo(j))
+                if not dirigido:
+                    grafo.agregar_arista(Nodo(j), Nodo(i))
+    return grafo
+
+def grafoBarabasiAlbert(n, d, dirigido=False):
+    grafo = Grafo()
+    nodos = [Nodo(i) for i in range(d)]
+    for nodo in nodos:
+        grafo.agregar_nodo(nodo)
+    for i in range(d, n):
+        nuevo_nodo = Nodo(i)
+        grafo.agregar_nodo(nuevo_nodo)
+        probabilidades = [len([a for a in grafo.aristas if a.inicio == nodo]) + 1 for nodo in nodos]
+        total_probabilidades = sum(probabilidades)
+        nodos_elegidos = random.choices(nodos, weights=[p / total_probabilidades for p in probabilidades], k=d)
+        for nodo_elegido in nodos_elegidos:
+            grafo.agregar_arista(nuevo_nodo, nodo_elegido)
+            if not dirigido:
+                grafo.agregar_arista(nodo_elegido, nuevo_nodo)
+        nodos.append(nuevo_nodo)
+    return grafo
+
+def grafoDorogovtsevMendes(n, dirigido=False):
+    grafo = Grafo()
+    for i in range(3):
+        grafo.agregar_nodo(Nodo(i))
+    grafo.agregar_arista(Nodo(0), Nodo(1))
+    grafo.agregar_arista(Nodo(0), Nodo(2))
+    grafo.agregar_arista(Nodo(1), Nodo(2))
+    for i in range(3, n):
+        arista = random.choice(grafo.aristas)
+        nuevo_nodo = Nodo(i)
+        grafo.agregar_nodo(nuevo_nodo)
+        grafo.agregar_arista(nuevo_nodo, arista.inicio)
+        grafo.agregar_arista(nuevo_nodo, arista.fin)
+    return grafo
+
+# Implementación:
+if __name__ == "__main__":
+    # Crear y guardar un grafo de malla
+    grafo_malla = grafoMalla(30, 30)
+    grafo_malla.grafo_a_graphviz("grafo_malla")
+
+    # Crear y guardar un grafo con el modelo de Erdos-Renyi
+    grafo_er = grafoErdosRenyi(50, 50)
+    grafo_er.grafo_a_graphviz("grafo_erdos_renyi")
+
+    # Crear y guardar un grafo con el modelo de Gilbert
+    grafo_gilbert = grafoGilbert(30, 0.3)
+    grafo_gilbert.grafo_a_graphviz("grafo_gilbert")
+
+    # Crear y guardar un grafo con el modelo geográfico simple
+    grafo_geo = grafoGeografico(30, 0.5)
+    grafo_geo.grafo_a_graphviz("grafo_geografico")
+
+    # Crear y guardar un grafo con el modelo Barabasi-Albert
+    grafo_ba = grafoBarabasiAlbert(30, 2)
+    grafo_ba.grafo_a_graphviz("grafo_barabasi_albert")
+
+    # Crear y guardar un grafo con el modelo Dorogovtsev-Mendes
+    grafo_dm = grafoDorogovtsevMendes(30)
+    grafo_dm.grafo_a_graphviz("grafo_dorogovtsev_mendes")
+
+    # Ejecutar BFS, DFS recursivo e iterativo y guardar los resultados
+    bfs_result = grafo_malla.BFS(grafo_malla.nodos[0])
+    bfs_result.grafo_a_graphviz("arbol_BFS_malla")
+
+    dfs_r_result = grafo_malla.DFS_R(grafo_malla.nodos[0])
+    dfs_r_result.grafo_a_graphviz("arbol_DFS_R_malla")
+
+    dfs_i_result = grafo_malla.DFS_I(grafo_malla.nodos[0])
+    dfs_i_result.grafo_a_graphviz("arbol_DFS_I_malla")
