@@ -1,0 +1,246 @@
+#Proyecto 05 Diseño y analisis de algorimos
+# CIC-IPN Rosendo Valdes Hernandez
+
+import pygame
+import random
+import math
+
+# Definir colores
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (200, 200, 200)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+# Configuración de la pantalla
+WIDTH, HEIGHT = 800, 600
+FPS = 60
+
+# Parámetros del algoritmo de Fruchterman y Reingold
+K = 0.5  # Constante de ajuste para la fuerza de atracción
+C = 0.1  # Constante de ajuste para la fuerza de repulsión
+ITERACIONES = 100  # Número de iteraciones del algoritmo
+
+# Inicializar pygame
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('Visualización de Grafo con Force-directed (Fruchterman y Reingold)')
+clock = pygame.time.Clock()
+
+# Función para generar un grafo aleatorio con n nodos y m aristas
+def generar_grafo_aleatorio(n, m):
+    grafo = {}
+    aristas = []
+    for i in range(n):
+        grafo[i] = []
+    
+    while len(aristas) < m:
+        u = random.randint(0, n-1)
+        v = random.randint(0, n-1)
+        if u != v and (u, v) not in aristas and (v, u) not in aristas:
+            peso = random.randint(1, 10)  # Peso aleatorio para la arista (no utilizado en la visualización)
+            grafo[u].append(v)
+            grafo[v].append(u)
+            aristas.append((u, v))
+    
+    return grafo, aristas
+
+# Función para calcular la fuerza de repulsión entre nodos
+def fuerza_repulsion(posiciones):
+    fuerzas = {v: [0, 0] for v in posiciones}
+    for v1 in posiciones:
+        for v2 in posiciones:
+            if v1 != v2:
+                dx = posiciones[v2][0] - posiciones[v1][0]
+                dy = posiciones[v2][1] - posiciones[v1][1]
+                distancia = max(math.sqrt(dx*dx + dy*dy), 0.1)
+                fuerza = C / distancia**2
+                fuerzas[v1][0] -= fuerza * dx / distancia
+                fuerzas[v1][1] -= fuerza * dy / distancia
+    return fuerzas
+
+# Función para calcular la fuerza de atracción de las aristas
+def fuerza_atraccion(posiciones, aristas):
+    fuerzas = {v: [0, 0] for v in posiciones}
+    for u, v in aristas:
+        dx = posiciones[v][0] - posiciones[u][0]
+        dy = posiciones[v][1] - posiciones[u][1]
+        distancia = max(math.sqrt(dx*dx + dy*dy), 0.1)
+        fuerza = distancia / K
+        fuerzas[u][0] += fuerza * dx / distancia
+        fuerzas[u][1] += fuerza * dy / distancia
+        fuerzas[v][0] -= fuerza * dx / distancia
+        fuerzas[v][1] -= fuerza * dy / distancia
+    return fuerzas
+
+# Función para actualizar las posiciones de los nodos según las fuerzas
+def actualizar_posiciones(posiciones, fuerzas):
+    nueva_posicion = {}
+    for v in posiciones:
+        vx = posiciones[v][0] + fuerzas[v][0]
+        vy = posiciones[v][1] + fuerzas[v][1]
+        nueva_posicion[v] = (vx, vy)
+    return nueva_posicion
+
+# Función para dibujar el grafo en pantalla
+def dibujar_grafo(screen, posiciones, aristas):
+    screen.fill(WHITE)
+    for u, v in aristas:
+        pygame.draw.line(screen, BLACK, posiciones[u], posiciones[v], 2)
+    for v, (x, y) in posiciones.items():
+        pygame.draw.circle(screen, RED, (int(x), int(y)), 10)
+        pygame.draw.circle(screen, BLACK, (int(x), int(y)), 10, 2)
+    pygame.display.flip()
+
+# Función principal para ejecutar el algoritmo de Fruchterman y Reingold
+def ejecutar_fruchterman_reingold(nodos, aristas):
+    posiciones = {v: (random.randint(50, WIDTH-50), random.randint(50, HEIGHT-50)) for v in nodos}
+    
+    for _ in range(ITERACIONES):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+        
+        # Calcular fuerzas
+        fuerzas_repulsion = fuerza_repulsion(posiciones)
+        fuerzas_atraccion = fuerza_atraccion(posiciones, aristas)
+        
+        # Actualizar posiciones
+        fuerzas_totales = {v: [fuerzas_repulsion[v][0] + fuerzas_atraccion[v][0],
+                               fuerzas_repulsion[v][1] + fuerzas_atraccion[v][1]] for v in nodos}
+        posiciones = actualizar_posiciones(posiciones, fuerzas_totales)
+        
+        # Dibujar grafo
+        dibujar_grafo(screen, posiciones, aristas)
+        
+        clock.tick(FPS)
+
+# Generar y ejecutar grafo aleatorio con 100 nodos y 500 aristas usando Fruchterman y Reingold
+if __name__ == '__main__':
+    nodos, aristas = generar_grafo_aleatorio(100, 500)
+    ejecutar_fruchterman_reingold(nodos, aristas)
+
+
+# Implementación de Barnes-Hut para Force-directed (simplificado)
+class Quadtree:
+    def __init__(self, boundary, capacity):
+        self.boundary = boundary  # (x_min, x_max, y_min, y_max)
+        self.capacity = capacity  # Capacidad máxima de puntos por celda
+        self.points = []          # Lista de puntos en la celda
+        self.divided = False      # Indica si la celda está dividida
+        self.northwest = None     # Cuadrante noroeste
+        self.northeast = None     # Cuadrante noreste
+        self.southwest = None     # Cuadrante suroeste
+        self.southeast = None     # Cuadrante sureste
+    
+    def insert(self, point):
+        # Insertar un punto en el quadtree
+        if not self.boundary_contains(point):
+            return False
+        
+        if len(self.points) < self.capacity:
+            self.points.append(point)
+            return True
+        else:
+            if not self.divided:
+                self.subdivide()
+            if self.northwest.insert(point): return True
+            if self.northeast.insert(point): return True
+            if self.southwest.insert(point): return True
+            if self.southeast.insert(point): return True
+            return False
+    
+    def subdivide(self):
+        # Dividir la celda en 4 cuadrantes
+        x_min, x_max, y_min, y_max = self.boundary
+        x_mid = (x_min + x_max) / 2
+        y_mid = (y_min + y_max) / 2
+        
+        self.northwest = Quadtree((x_min, x_mid, y_min, y_mid), self.capacity)
+        self.northeast = Quadtree((x_mid, x_max, y_min, y_mid), self.capacity)
+        self.southwest = Quadtree((x_min, x_mid, y_mid, y_max), self.capacity)
+        self.southeast = Quadtree((x_mid, x_max, y_mid, y_max), self.capacity)
+        self.divided = True
+    
+    def boundary_contains(self, point):
+        # Verificar si un punto está dentro de los límites de la celda
+        x_min, x_max, y_min, y_max = self.boundary
+        x, y = point
+        return x_min <= x <= x_max and y_min <= y <= y_max
+    
+    def get_points_in_range(self, range_boundary):
+        # Obtener todos los puntos dentro de un rango específico
+        points_in_range = []
+        if not self.boundary_intersects(range_boundary):
+            return points_in_range
+        
+        for point in self.points:
+            if range_boundary[0] <= point[0] <= range_boundary[1] and range_boundary[2] <= point[1] <= range_boundary[3]:
+                points_in_range.append(point)
+        
+        if self.divided:
+            points_in_range.extend(self.northwest.get_points_in_range(range_boundary))
+            points_in_range.extend(self.northeast.get_points_in_range(range_boundary))
+            points_in_range.extend(self.southwest.get_points_in_range(range_boundary))
+            points_in_range.extend(self.southeast.get_points_in_range(range_boundary))
+        
+        return points_in_range
+    
+    def boundary_intersects(self, range_boundary):
+        # Verificar si los límites de la celda intersectan con un rango específico
+        x_min, x_max, y_min, y_max = self.boundary
+        rx_min, rx_max, ry_min, ry_max = range_boundary
+        return not (rx_min > x_max or rx_max < x_min or ry_min > y_max or ry_max < y_min)
+
+# Función para calcular la fuerza de repulsión con Barnes-Hut
+def fuerza_repulsion_bh(quadtree, posiciones):
+    fuerzas = {v: [0, 0] for v in posiciones}
+    for v in posiciones:
+        range_boundary = (posiciones[v][0] - 50, posiciones[v][0] + 50, posiciones[v][1] - 50, posiciones[v][1] + 50)
+        puntos_cercanos = quadtree.get_points_in_range(range_boundary)
+        for punto in puntos_cercanos:
+            if punto != posiciones[v]:
+                dx = posiciones[v][0] - punto[0]
+                dy = posiciones[v][1] - punto[1]
+                distancia = max(math.sqrt(dx*dx + dy*dy), 0.1)
+                fuerza = C / distancia**2
+                fuerzas[v][0] -= fuerza * dx / distancia
+                fuerzas[v][1] -= fuerza * dy / distancia
+    return fuerzas
+
+# Función para ejecutar el algoritmo de Barnes-Hut para Force-directed
+def ejecutar_barnes_hut(nodos, aristas):
+    posiciones = {v: (random.randint(50, WIDTH-50), random.randint(50, HEIGHT-50)) for v in nodos}
+    
+    # Construir el quadtree inicial
+    boundary = (0, WIDTH, 0, HEIGHT)
+    quadtree = Quadtree(boundary, 4)
+    for v in posiciones.values():
+        quadtree.insert(v)
+    
+    for _ in range(ITERACIONES):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+        
+        # Calcular fuerzas con Barnes-Hut
+        fuerzas_repulsion = fuerza_repulsion_bh(quadtree, posiciones)
+        fuerzas_atraccion = fuerza_atraccion(posiciones, aristas)
+        
+        # Actualizar posiciones
+        fuerzas_totales = {v: [fuerzas_repulsion[v][0] + fuerzas_atraccion[v][0],
+                               fuerzas_repulsion[v][1] + fuerzas_atraccion[v][1]] for v in nodos}
+        posiciones = actualizar_posiciones(posiciones, fuerzas_totales)
+        
+        # Dibujar grafo
+        dibujar_grafo(screen, posiciones, aristas)
+        
+        clock.tick(FPS)
+
+# Generar y ejecutar grafo aleatorio con 100 nodos y 500 aristas usando Barnes-Hut
+if __name__ == '__main__':
+    nodos, aristas = generar_grafo_aleatorio(100, 500)
+    ejecutar_barnes_hut(nodos, aristas)
