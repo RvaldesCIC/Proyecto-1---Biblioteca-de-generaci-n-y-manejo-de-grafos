@@ -1,0 +1,122 @@
+#Proyecto 05 Diseño y analisis de algorimos
+# CIC-IPN Rosendo Valdes Hernandez
+
+pip install pygame
+
+
+import pygame
+import random
+import math
+
+# Definir colores
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (200, 200, 200)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+# Configuración de la pantalla
+WIDTH, HEIGHT = 800, 600
+FPS = 60
+
+# Inicializar pygame
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('Visualización de Grafo con Spring Algorithm')
+clock = pygame.time.Clock()
+
+# Función para calcular la fuerza de repulsión entre nodos
+def fuerza_repulsion(posiciones, k):
+    fuerzas = {v: [0, 0] for v in posiciones}
+    for v1 in posiciones:
+        for v2 in posiciones:
+            if v1 != v2:
+                dx = posiciones[v2][0] - posiciones[v1][0]
+                dy = posiciones[v2][1] - posiciones[v1][1]
+                distancia = max(math.sqrt(dx*dx + dy*dy), 0.1)
+                fuerza = k / distancia**2
+                fuerzas[v1][0] += fuerza * dx / distancia
+                fuerzas[v1][1] += fuerza * dy / distancia
+    return fuerzas
+
+# Función para calcular la fuerza de atracción de las aristas
+def fuerza_atraccion(posiciones, aristas, k):
+    fuerzas = {v: [0, 0] for v in posiciones}
+    for u, v in aristas:
+        dx = posiciones[v][0] - posiciones[u][0]
+        dy = posiciones[v][1] - posiciones[u][1]
+        distancia = max(math.sqrt(dx*dx + dy*dy), 0.1)
+        fuerza = distancia / k
+        fuerzas[u][0] += fuerza * dx / distancia
+        fuerzas[u][1] += fuerza * dy / distancia
+        fuerzas[v][0] -= fuerza * dx / distancia
+        fuerzas[v][1] -= fuerza * dy / distancia
+    return fuerzas
+
+# Función para actualizar las posiciones de los nodos según las fuerzas
+def actualizar_posiciones(posiciones, fuerzas, delta_t):
+    nueva_posicion = {}
+    for v in posiciones:
+        vx = posiciones[v][0] + fuerzas[v][0] * delta_t
+        vy = posiciones[v][1] + fuerzas[v][1] * delta_t
+        nueva_posicion[v] = (vx, vy)
+    return nueva_posicion
+
+# Función para dibujar el grafo en pantalla
+def dibujar_grafo(screen, posiciones, aristas):
+    screen.fill(WHITE)
+    for u, v in aristas:
+        pygame.draw.line(screen, BLACK, posiciones[u], posiciones[v], 2)
+    for v, (x, y) in posiciones.items():
+        pygame.draw.circle(screen, RED, (int(x), int(y)), 10)
+        pygame.draw.circle(screen, BLACK, (int(x), int(y)), 10, 2)
+    pygame.display.flip()
+
+# Función para generar un grafo aleatorio con n nodos y m aristas
+def generar_grafo_aleatorio(n, m):
+    grafo = {}
+    aristas = []
+    for i in range(n):
+        grafo[i] = []
+    
+    while len(aristas) < m:
+        u = random.randint(0, n-1)
+        v = random.randint(0, n-1)
+        if u != v and (u, v) not in aristas and (v, u) not in aristas:
+            peso = random.randint(1, 10)  # Peso aleatorio para la arista (no utilizado en la visualización)
+            grafo[u].append(v)
+            grafo[v].append(u)
+            aristas.append((u, v))
+    
+    return grafo, aristas
+
+# Función principal para ejecutar el algoritmo de resortes
+def ejecutar_algoritmo_spring(nodos, aristas):
+    posiciones = {v: (random.randint(50, WIDTH-50), random.randint(50, HEIGHT-50)) for v in nodos}
+    k = math.sqrt(WIDTH * HEIGHT / len(nodos))  # Constante k dependiente del área de la pantalla y la cantidad de nodos
+    
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+        
+        # Calcular fuerzas
+        fuerzas_repulsion = fuerza_repulsion(posiciones, k)
+        fuerzas_atraccion = fuerza_atraccion(posiciones, aristas, k)
+        
+        # Actualizar posiciones
+        fuerzas_totales = {v: [fuerzas_repulsion[v][0] + fuerzas_atraccion[v][0],
+                               fuerzas_repulsion[v][1] + fuerzas_atraccion[v][1]] for v in nodos}
+        posiciones = actualizar_posiciones(posiciones, fuerzas_totales, 0.1)
+        
+        # Dibujar grafo
+        dibujar_grafo(screen, posiciones, aristas)
+        
+        clock.tick(FPS)
+
+# Generar y ejecutar grafo aleatorio con 100 nodos y 500 aristas
+if __name__ == '__main__':
+    nodos, aristas = generar_grafo_aleatorio(100, 500)
+    ejecutar_algoritmo_spring(nodos, aristas)
